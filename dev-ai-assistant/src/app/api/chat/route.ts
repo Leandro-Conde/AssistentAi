@@ -23,5 +23,5 @@ export async function POST(req: Request) {
       { error: String(error) },
       { status: 500 }
     );
-  }
+  }/
 }
