@@ -4,46 +4,73 @@ import { useState } from 'react';
 
 export default function ChatBox() {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<string[]>([]);
+  const [messages, setMessages] = useState<
+  { role: string; content: string }[]
+>([]);
 
-  async function handleSend() {
-    if (!input) return;
+async function handleSend() {
+  if (!input) return;
 
-    const userMessage = input;
+  const userMessage = {
+    role: 'user',
+    content: input,
+  };
 
-    setMessages((prev) => [...prev, "Você: " + userMessage]);
-    setInput('');
+  setMessages((prev) => [...prev, userMessage]);
 
-    try {
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ message: userMessage }),
-      });
+  const currentInput = input;
 
-      if (!res.ok) {
-        throw new Error('Erro na requisição');
-      }
+  setInput('');
 
-      const data = await res.json();
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: currentInput,
+        history: [...messages, userMessage],
+      }),
+    });
 
-      setMessages((prev) => [...prev, "IA: " + data.reply]);
-    } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        "Erro ao se comunicar com a IA.",
-      ]);
+    if (!res.ok) {
+      throw new Error('Erro na requisição');
     }
+
+    const data = await res.json();
+
+    const aiMessage = {
+      role: 'assistant',
+      content: data.reply,
+    };
+
+    setMessages((prev) => [...prev, aiMessage]);
+
+  } catch (error) {
+    console.error(error);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: 'Erro ao se comunicar com a IA.',
+      },
+    ]);
   }
+}
 
   return (
     <div className="flex flex-col gap-4 w-full max-w-xl">
       <div className="border p-4 min-h-[150px] rounded">
-        {messages.map((msg, index) => (
-          <p key={index}>{msg}</p>
-        ))}
+      {messages.map((msg, index) => (
+  <p key={index}>
+    <strong>
+      {msg.role === 'user' ? 'Você' : 'Anna'}:
+    </strong>{' '}
+    {msg.content}
+  </p>
+))}
       </div>
 
       <textarea
